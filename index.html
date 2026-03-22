@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo Quest: Prototype Node</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+        .fog-transition { transition: filter 1.2s ease, background-color 2s ease; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function EchoQuest() {
+            const [input, setInput] = useState("");
+            const [isHarmonized, setIsHarmonized] = useState(false);
+            
+            // Level 1-1 Settings
+            const targetEcho = "I am too slow";
+            const targetSyllables = 4;
+
+            // Simple Syllable Counter Logic
+            const countSyllables = (str) => {
+                const words = str.toLowerCase().split(' ').filter(w => w.length > 0);
+                let total = 0;
+                words.forEach(word => {
+                    if (word.length <= 3) total += 1;
+                    else {
+                        const count = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '')
+                                         .replace(/^y/, '')
+                                         .match(/[aeiouy]{1,2}/g);
+                        total += count ? count.length : 1;
+                    }
+                });
+                return total;
+            };
+
+            const currentSyllables = countSyllables(input);
+
+            useEffect(() => {
+                // Check if syllables match AND it's not the original negative thought
+                if (currentSyllables === targetSyllables && input.toLowerCase() !== targetEcho.toLowerCase() && input.length > 5) {
+                    setIsHarmonized(true);
+                } else {
+                    setIsHarmonized(false);
+                }
+            }, [input]);
+
+            return (
+                <div className={`h-screen w-full flex flex-col items-center justify-center fog-transition ${isHarmonized ? 'bg-teal-950/20' : 'bg-slate-950'}`}>
+                    
+                    {/* Background Fog Layer */}
+                    <div className={`absolute inset-0 pointer-events-none fog-transition z-0 opacity-40`}
+                         style={{ 
+                             filter: `blur(${isHarmonized ? '0px' : '25px'})`,
+                             background: isHarmonized 
+                                ? 'radial-gradient(circle, rgba(45,212,191,0.2) 0%, transparent 70%)'
+                                : 'radial-gradient(circle, rgba(71,85,105,0.4) 0%, transparent 70%)'
+                         }} />
+
+                    <div className="z-10 text-center px-6">
+                        <h2 className="font-cinzel text-teal-500 tracking-[0.2em] mb-2 text-sm uppercase">Level 1: The Outskirts</h2>
+                        
+                        <div className="mb-12">
+                            <p className={`text-4xl font-cinzel transition-all duration-1000 ${isHarmonized ? 'text-teal-400 scale-110' : 'text-slate-500 italic'}`}>
+                                "{isHarmonized ? input : targetEcho}"
+                            </p>
+                            {!isHarmonized && (
+                                <div className="flex justify-center gap-1 mt-4">
+                                    {[...Array(targetSyllables)].map((_, i) => (
+                                        <div key={i} className="w-2 h-2 rounded-full bg-red-500/50 animate-pulse" />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {!isHarmonized ? (
+                            <div className="flex flex-col items-center">
+                                <input 
+                                    autoFocus
+                                    className="bg-transparent border-b border-slate-700 text-2xl text-center py-2 focus:outline-none focus:border-teal-500 transition-colors w-64 md:w-96"
+                                    placeholder="Re-rhythm this thought..."
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                />
+                                <p className="mt-4 text-xs text-slate-500 uppercase tracking-widest">
+                                    Syllables: {currentSyllables} / {targetSyllables}
+                                </p>
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={() => { setInput(""); setIsHarmonized(false); }}
+                                className="mt-8 px-8 py-3 bg-teal-500 text-white rounded-full font-bold hover:bg-teal-400 transition-all animate-bounce"
+                            >
+                                CONTINUE THE QUEST
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<EchoQuest />);
+    </script>
+</body>
+</html>
