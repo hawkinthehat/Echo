@@ -1,162 +1,95 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Echo Quest: The Resonator's Journey</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow: hidden; }
-        .font-cinzel { font-family: 'Cinzel', serif; }
-        .fade-in { animation: fadeIn 1.5s ease-in forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .glow-text { text-shadow: 0 0 15px rgba(45, 212, 191, 0.6); }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
+function EchoQuest() {
+    const [gameState, setGameState] = useState('INTRO');
+    const [input, setInput] = useState("");
+    const [isHarmonized, setIsHarmonized] = useState(false); // Locked in/Success
+    const [level, setLevel] = useState(0);
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    const levels = [
+        { distorted: "I am too slow", syllables: 4 },
+        { distorted: "It is hope-less", syllables: 4 },
+        { distorted: "Why even try now?", syllables: 5 },
+        { distorted: "Not good e-nough", syllables: 4 }
+    ];
 
-        const IntroOverlay = ({ onStart }) => (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-xl p-6">
-                <div className="max-w-md w-full border border-teal-500/20 p-10 rounded-3xl bg-slate-900 shadow-2xl text-center">
-                    <h1 className="font-cinzel text-3xl text-teal-400 mb-6 tracking-widest">ECHO QUEST</h1>
-                    <div className="space-y-4 text-slate-300 text-sm mb-8 text-left leading-relaxed">
-                        <p className="italic text-teal-200/70 border-l-2 border-teal-500 pl-4 mb-6">
-                            "The Great Silence has fallen. As a Resonator, you must match the rhythm of the fog to clear it."
-                        </p>
-                        <div className="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <h3 className="text-teal-500 font-bold text-xs mb-2 uppercase tracking-tighter">Instructions:</h3>
-                            <ul className="space-y-3">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-teal-500">•</span>
-                                    <span>Identify the <strong>beats</strong> (syllables) of the grey Echo.</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-teal-500">•</span>
-                                    <span>Type a <strong>Positive Thought</strong> with the same count.</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-teal-500">•</span>
-                                    <span>Example: <em>"I am stuck"</em> (3) → <em>"I can grow"</em> (3).</span>
-                                </li>
-                            </ul>
+    const currentLevel = levels[level % levels.length];
+
+    const countSyllables = (str) => {
+        const words = str.toLowerCase().split(' ').filter(w => w.length > 0);
+        let total = 0;
+        words.forEach(word => {
+            if (word.length <= 3) total += 1;
+            else {
+                const count = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '')
+                                 .replace(/^y/, '')
+                                 .match(/[aeiouy]{1,2}/g);
+                total += count ? count.length : 1;
+            }
+        });
+        return total;
+    };
+
+    const currentSyllables = countSyllables(input);
+    
+    // Rule: Matches syllables AND isn't the original text
+    const isValidResonance = currentSyllables === currentLevel.syllables && 
+                             input.toLowerCase() !== currentLevel.distorted.toLowerCase() &&
+                             input.trim().split(" ").length >= 2;
+
+    const handleConfirm = () => {
+        if (isValidResonance) setIsHarmonized(true);
+    };
+
+    const nextLevel = () => {
+        setInput("");
+        setIsHarmonized(false);
+        setLevel(prev => prev + 1);
+    };
+
+    return (
+        <div className="h-screen w-full relative flex flex-col items-center justify-center bg-slate-950">
+            {gameState === 'INTRO' && <IntroOverlay onStart={() => setGameState('PLAYING')} />}
+
+            <div className="z-10 text-center px-4 w-full max-w-xl">
+                <p className={`font-cinzel text-3xl md:text-5xl mb-12 transition-all duration-700 ${isHarmonized ? 'text-teal-400' : 'text-slate-600 italic'}`}>
+                    "{isHarmonized ? input : currentLevel.distorted}"
+                </p>
+
+                {!isHarmonized ? (
+                    <div className="flex flex-col items-center">
+                        <input 
+                            autoFocus
+                            className={`bg-transparent border-b-2 text-2xl text-center py-4 focus:outline-none transition-all w-full 
+                                ${isValidResonance ? 'border-teal-400 text-teal-300' : 'border-slate-800 text-white'}`}
+                            placeholder="Type your resonance..."
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
+                        />
+                        
+                        <div className="mt-8 flex flex-col items-center gap-4">
+                            <p className="text-[10px] tracking-[0.3em] text-slate-500 uppercase">
+                                Beats: {currentSyllables} / {currentLevel.syllables}
+                            </p>
+                            
+                            {isValidResonance && (
+                                <button 
+                                    onClick={handleConfirm}
+                                    className="text-teal-400 font-bold text-xs tracking-widest animate-pulse border border-teal-400/30 px-4 py-2 rounded-full"
+                                >
+                                    HIT ENTER TO CONFIRM
+                                </button>
+                            )}
                         </div>
                     </div>
+                ) : (
                     <button 
-                        onClick={onStart}
-                        className="w-full py-4 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-2xl transition-all shadow-lg hover:shadow-teal-500/20 uppercase tracking-widest text-xs"
+                        onClick={nextLevel}
+                        className="px-12 py-5 bg-teal-500 text-white rounded-2xl font-bold shadow-2xl hover:bg-teal-400 transition-all uppercase tracking-widest text-sm"
                     >
-                        Begin Resonance
+                        Next Echo →
                     </button>
-                </div>
+                )}
             </div>
-        );
-
-        function EchoQuest() {
-            const [gameState, setGameState] = useState('INTRO');
-            const [input, setInput] = useState("");
-            const [isHarmonized, setIsHarmonized] = useState(false);
-            const [level, setLevel] = useState(0);
-
-            const levels = [
-                { distorted: "I am too slow", syllables: 4 },
-                { distorted: "It is hope-less", syllables: 4 },
-                { distorted: "Why even try now?", syllables: 5 },
-                { distorted: "Not good e-nough", syllables: 4 }
-            ];
-
-            const currentLevel = levels[level % levels.length];
-
-            const countSyllables = (str) => {
-                const words = str.toLowerCase().split(' ').filter(w => w.length > 0);
-                let total = 0;
-                words.forEach(word => {
-                    if (word.length <= 3) total += 1;
-                    else {
-                        const count = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '')
-                                         .replace(/^y/, '')
-                                         .match(/[aeiouy]{1,2}/g);
-                        total += count ? count.length : 1;
-                    }
-                });
-                return total;
-            };
-
-            const currentSyllables = countSyllables(input);
-
-            useEffect(() => {
-                const isMatch = currentSyllables === currentLevel.syllables;
-                const isNotOriginal = input.toLowerCase() !== currentLevel.distorted.toLowerCase();
-                const isLongEnough = input.trim().split(" ").length >= 2;
-
-                setIsHarmonized(isMatch && isNotOriginal && isLongEnough);
-            }, [input, currentLevel]);
-
-            const nextLevel = () => {
-                setInput("");
-                setIsHarmonized(false);
-                setLevel(prev => prev + 1);
-            };
-
-            return (
-                <div className="h-screen w-full relative flex flex-col items-center justify-center transition-colors duration-1000">
-                    {gameState === 'INTRO' && <IntroOverlay onStart={() => setGameState('PLAYING')} />}
-
-                    {/* The Background Fog */}
-                    <div className={`absolute inset-0 transition-all duration-1000 ${isHarmonized ? 'bg-teal-900/20 blur-0' : 'bg-slate-950 blur-xl opacity-60'}`} 
-                         style={{ background: isHarmonized ? 'radial-gradient(circle, #134e4a 0%, #020617 100%)' : '' }} />
-
-                    <div className="z-10 text-center fade-in px-4">
-                        <span className="text-teal-500/50 font-mono text-[10px] tracking-[0.4em] uppercase mb-4 block">
-                            Echo Layer: {level + 1}
-                        </span>
-
-                        <p className={`font-cinzel text-3xl md:text-5xl mb-12 transition-all duration-700 ${isHarmonized ? 'text-teal-300 glow-text scale-105' : 'text-slate-600 italic'}`}>
-                            "{isHarmonized ? input : currentLevel.distorted}"
-                        </p>
-
-                        {!isHarmonized ? (
-                            <div className="max-w-sm mx-auto">
-                                <input 
-                                    autoFocus
-                                    className="bg-transparent border-b border-slate-800 text-2xl text-center py-4 focus:outline-none focus:border-teal-500 transition-all w-full placeholder:text-slate-800"
-                                    placeholder="Speak your truth..."
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                />
-                                <div className="mt-6 flex flex-col items-center gap-2">
-                                    <div className="flex gap-2">
-                                        {[...Array(currentLevel.syllables)].map((_, i) => (
-                                            <div key={i} className={`h-1.5 w-6 rounded-full transition-all duration-300 ${i < currentSyllables ? 'bg-teal-500' : 'bg-slate-800'}`} />
-                                        ))}
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-2">
-                                        Rhythm: {currentSyllables} / {currentLevel.syllables}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <button 
-                                onClick={nextLevel}
-                                className="px-12 py-5 bg-teal-500 text-white rounded-2xl font-bold shadow-2xl hover:bg-teal-400 transition-all uppercase tracking-widest text-sm animate-pulse"
-                            >
-                                Shatter the Fog →
-                            </button>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<EchoQuest />);
-    </script>
-</body>
-</html>
+        </div>
+    );
+}
